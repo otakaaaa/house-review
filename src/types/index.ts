@@ -7,7 +7,7 @@ export type EvaluationRating = 'best' | 'good' | 'average' | 'compromise' | 'dis
 export type EvaluatorId = 'self' | 'spouse'
 
 export const EVALUATOR_LABEL: Record<EvaluatorId, string> = {
-  self: '自分',
+  self: '夫',
   spouse: '妻',
 }
 

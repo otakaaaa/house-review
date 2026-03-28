@@ -20,6 +20,25 @@ class HouseReviewDB extends Dexie {
     }).upgrade((tx) => {
       return tx.table('properties').toCollection().modify({ _synced: true })
     })
+    this.version(4).stores({
+      properties: 'id, type, status, visitDate, totalScore, createdAt',
+      axisTemplates: 'type',
+    }).upgrade((tx) => {
+      return tx.table('properties').toCollection().modify((property) => {
+        property.evaluationAxes = property.evaluationAxes.map(
+          (axis: { id: string; name: string; weight: number; order: number; rating: string | null; comment: string }) => ({
+            id: axis.id,
+            name: axis.name,
+            weight: axis.weight,
+            order: axis.order,
+            evaluations:
+              axis.rating !== null || axis.comment
+                ? [{ evaluatorId: 'self', rating: axis.rating, comment: axis.comment }]
+                : [],
+          }),
+        )
+      })
+    })
   }
 }
 

@@ -1,10 +1,18 @@
-import { EVALUATION_RATING_LABEL, PROPERTY_TYPE_LABEL, type Property } from '@/types'
-import { RATING_SCORE } from '@/lib/scoring'
+import {
+  EVALUATION_RATING_LABEL,
+  EVALUATOR_LABEL,
+  PROPERTY_TYPE_LABEL,
+  type EvaluatorId,
+  type Property,
+} from '@/types'
+import { RATING_SCORE, flattenForEvaluator } from '@/lib/scoring'
 import { cn } from '@/lib/utils'
 
 interface CompareTableProps {
   properties: Property[]
 }
+
+const EVALUATORS: EvaluatorId[] = ['self', 'spouse']
 
 const SCORE_COLOR = (score: number | null) => {
   if (score === null) return 'text-muted-foreground'
@@ -69,24 +77,36 @@ export default function CompareTable({ properties }: CompareTableProps) {
               {properties.map((p) => {
                 const axis = p.evaluationAxes.find((a) => a.name === axisName)
                 return (
-                  <td key={p.id} className="border-b px-3 py-2">
-                    {axis?.rating ? (
-                      <div>
-                        <span
-                          className={cn(
-                            'text-xs',
-                            RATING_COLOR(RATING_SCORE[axis.rating]),
-                          )}
-                        >
-                          {EVALUATION_RATING_LABEL[axis.rating]}
-                        </span>
-                        {axis.comment && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">
-                            {axis.comment}
-                          </p>
-                        )}
-                      </div>
+                  <td key={p.id} className="border-b px-3 py-2 space-y-1">
+                    {axis ? (
+                      EVALUATORS.map((evaluatorId) => {
+                        const flat = flattenForEvaluator([axis], evaluatorId)[0]
+                        if (!flat.rating) return null
+                        return (
+                          <div key={evaluatorId}>
+                            <span className="text-[10px] text-muted-foreground mr-1">
+                              {EVALUATOR_LABEL[evaluatorId]}
+                            </span>
+                            <span
+                              className={cn(
+                                'text-xs',
+                                RATING_COLOR(RATING_SCORE[flat.rating]),
+                              )}
+                            >
+                              {EVALUATION_RATING_LABEL[flat.rating]}
+                            </span>
+                            {flat.comment && (
+                              <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                                {flat.comment}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })
                     ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                    {axis && !EVALUATORS.some((eid) => flattenForEvaluator([axis], eid)[0].rating) && (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </td>

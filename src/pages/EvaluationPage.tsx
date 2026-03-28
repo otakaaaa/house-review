@@ -9,29 +9,36 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useProperty } from '@/hooks/useProperty'
 import { useAxisTemplates } from '@/hooks/useAxisTemplates'
 import { getPresetAxes } from '@/lib/presets'
-import type { AxisTemplate, EvaluationAxis, Property } from '@/types'
+import { flattenForEvaluator, applyFlatChanges, calcScoreForEvaluator } from '@/lib/scoring'
+import {
+  type AxisTemplate,
+  type EvaluationAxis,
+  type FlatEvaluationAxis,
+  type EvaluatorId,
+  type Property,
+  EVALUATOR_LABEL,
+} from '@/types'
+import { cn } from '@/lib/utils'
 
 function mergeAxes(
   templateAxes: AxisTemplate[],
   propertyAxes: EvaluationAxis[],
 ): EvaluationAxis[] {
-  const ratingMap = new Map(propertyAxes.map((a) => [a.id, { rating: a.rating, comment: a.comment }]))
-  return templateAxes.map((t) => {
-    const existing = ratingMap.get(t.id)
-    return {
-      id: t.id,
-      name: t.name,
-      weight: t.weight,
-      order: t.order,
-      rating: existing?.rating ?? null,
-      comment: existing?.comment ?? '',
-    }
-  })
+  const evalMap = new Map(propertyAxes.map((a) => [a.id, a.evaluations]))
+  return templateAxes.map((t) => ({
+    id: t.id,
+    name: t.name,
+    weight: t.weight,
+    order: t.order,
+    evaluations: evalMap.get(t.id) ?? [],
+  }))
 }
 
 function toTemplate(axes: EvaluationAxis[]): AxisTemplate[] {
   return axes.map(({ id, name, weight, order }) => ({ id, name, weight, order }))
 }
+
+const EVALUATORS: EvaluatorId[] = ['self', 'spouse']
 
 export default function EvaluationPage() {
   const { id } = useParams<{ id: string }>()
@@ -40,6 +47,7 @@ export default function EvaluationPage() {
   const { getTemplate, saveTemplate } = useAxisTemplates()
   const [property, setProperty] = useState<Property | null>(null)
   const [axes, setAxes] = useState<EvaluationAxis[]>([])
+  const [activeEvaluator, setActiveEvaluator] = useState<EvaluatorId>('self')
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -56,14 +64,18 @@ export default function EvaluationPage() {
       if (template) {
         setAxes(mergeAxes(template, p.evaluationAxes))
       } else {
-        // No template yet — use preset or property's own axes as initial
-        const initial =
-          p.evaluationAxes.length > 0 ? p.evaluationAxes : getPresetAxes(p.type)
+        const initial = p.evaluationAxes.length > 0 ? p.evaluationAxes : getPresetAxes(p.type)
         setAxes(initial)
       }
       setLoading(false)
     })
   }, [id, getProperty, getTemplate])
+
+  const flatAxes = flattenForEvaluator(axes, activeEvaluator)
+
+  const handleFlatChange = (flat: FlatEvaluationAxis[]) => {
+    setAxes(applyFlatChanges(axes, flat, activeEvaluator))
+  }
 
   const handleSubmit = async () => {
     if (!id || !property) return
@@ -127,7 +139,34 @@ export default function EvaluationPage() {
             <h1 className="text-xl font-bold">評価を入力</h1>
           </div>
 
-          <EvaluationForm axes={axes} onChange={setAxes} />
+          {/* 評価者タブ */}
+          <div className="flex gap-1 border-b">
+            {EVALUATORS.map((evaluatorId) => {
+              const score = calcScoreForEvaluator(axes, evaluatorId)
+              return (
+                <button
+                  key={evaluatorId}
+                  type="button"
+                  onClick={() => setActiveEvaluator(evaluatorId)}
+                  className={cn(
+                    'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                    activeEvaluator === evaluatorId
+                      ? 'border-foreground text-foreground'
+                      : 'border-transparent text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {EVALUATOR_LABEL[evaluatorId]}
+                  {score !== null && (
+                    <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">
+                      {score}点
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          <EvaluationForm axes={flatAxes} onChange={handleFlatChange} />
 
           <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
             {isSubmitting ? '保存中...' : '評価を保存する'}

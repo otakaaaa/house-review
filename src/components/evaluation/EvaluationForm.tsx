@@ -19,11 +19,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import ScoreDisplay from './ScoreDisplay'
 import EvaluationAxisRow from './EvaluationAxisRow'
-import type { EvaluationAxis } from '@/types'
+import type { FlatEvaluationAxis } from '@/types'
 
 interface EvaluationFormProps {
-  axes: EvaluationAxis[]
-  onChange: (axes: EvaluationAxis[]) => void
+  axes: FlatEvaluationAxis[]
+  onChange: (axes: FlatEvaluationAxis[]) => void
 }
 
 export default function EvaluationForm({ axes, onChange }: EvaluationFormProps) {
@@ -48,7 +48,7 @@ export default function EvaluationForm({ axes, onChange }: EvaluationFormProps) 
     onChange(reordered)
   }
 
-  const handleChange = (updated: EvaluationAxis) => {
+  const handleChange = (updated: FlatEvaluationAxis) => {
     onChange(axes.map((a) => (a.id === updated.id ? updated : a)))
   }
 
@@ -59,7 +59,7 @@ export default function EvaluationForm({ axes, onChange }: EvaluationFormProps) 
   const handleAdd = () => {
     const name = newAxisName.trim()
     if (!name) return
-    const newAxis: EvaluationAxis = {
+    const newAxis: FlatEvaluationAxis = {
       id: uuidv4(),
       name,
       weight: 3,

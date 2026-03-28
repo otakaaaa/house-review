@@ -5,12 +5,12 @@ import { CSS } from '@dnd-kit/utilities'
 import { Input } from '@/components/ui/input'
 import RatingSelector from './RatingSelector'
 import WeightSlider from './WeightSlider'
-import type { EvaluationAxis, EvaluationRating } from '@/types'
+import type { FlatEvaluationAxis, EvaluationRating } from '@/types'
 import { cn } from '@/lib/utils'
 
 interface EvaluationAxisRowProps {
-  axis: EvaluationAxis
-  onChange: (updated: EvaluationAxis) => void
+  axis: FlatEvaluationAxis
+  onChange: (updated: FlatEvaluationAxis) => void
   onDelete: () => void
 }
 

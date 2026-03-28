@@ -29,9 +29,8 @@ function buildAxes(presets: PresetAxis[]): EvaluationAxis[] {
     id: uuidv4(),
     name: p.name,
     weight: p.weight,
-    rating: null,
-    comment: '',
     order: index,
+    evaluations: [],
   }))
 }
 

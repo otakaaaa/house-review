@@ -4,13 +4,35 @@ export type PropertyStatus = 'considering' | 'visited' | 'rejected' | 'contracte
 
 export type EvaluationRating = 'best' | 'good' | 'average' | 'compromise' | 'dislike'
 
+export type EvaluatorId = 'self' | 'spouse'
+
+export const EVALUATOR_LABEL: Record<EvaluatorId, string> = {
+  self: '自分',
+  spouse: '妻',
+}
+
+export interface EvaluatorEntry {
+  evaluatorId: EvaluatorId
+  rating: EvaluationRating | null
+  comment: string
+}
+
 export interface EvaluationAxis {
   id: string
   name: string
   weight: number
+  order: number
+  evaluations: EvaluatorEntry[]
+}
+
+/** 単一評価者向けのフラット表現（EvaluationForm/EvaluationAxisRow で使用） */
+export interface FlatEvaluationAxis {
+  id: string
+  name: string
+  weight: number
+  order: number
   rating: EvaluationRating | null
   comment: string
-  order: number
 }
 
 export interface AxisTemplate {

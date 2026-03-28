@@ -1,14 +1,22 @@
-import { calcTotalScore } from '@/lib/scoring'
-import type { EvaluationAxis } from '@/types'
+import { RATING_SCORE } from '@/lib/scoring'
+import type { FlatEvaluationAxis } from '@/types'
 
 interface ScoreDisplayProps {
-  axes: EvaluationAxis[]
+  axes: FlatEvaluationAxis[]
 }
 
 export default function ScoreDisplay({ axes }: ScoreDisplayProps) {
-  const score = calcTotalScore(axes)
-  const ratedCount = axes.filter((a) => a.rating !== null).length
+  const rated = axes.filter((a) => a.rating !== null)
+  const ratedCount = rated.length
   const totalCount = axes.length
+
+  const score =
+    ratedCount === 0
+      ? null
+      : Math.round(
+          rated.reduce((acc, a) => acc + RATING_SCORE[a.rating!] * a.weight, 0) /
+            rated.reduce((acc, a) => acc + a.weight, 0),
+        )
 
   return (
     <div className="flex items-center gap-3">

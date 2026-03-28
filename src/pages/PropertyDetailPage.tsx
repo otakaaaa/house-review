@@ -5,7 +5,6 @@ import { toast } from 'sonner'
 import Layout from '@/components/layout/Layout'
 import Header from '@/components/layout/Header'
 import StatusBadge from '@/components/property/StatusBadge'
-import ScoreDisplay from '@/components/evaluation/ScoreDisplay'
 import {
   Dialog,
   DialogContent,
@@ -21,10 +20,14 @@ import { useProperty } from '@/hooks/useProperty'
 import {
   PROPERTY_TYPE_LABEL,
   EVALUATION_RATING_LABEL,
+  EVALUATOR_LABEL,
+  type EvaluatorId,
   type Property,
 } from '@/types'
-import { RATING_SCORE } from '@/lib/scoring'
+import { RATING_SCORE, calcScoreForEvaluator, flattenForEvaluator } from '@/lib/scoring'
 import { cn } from '@/lib/utils'
+
+const EVALUATORS: EvaluatorId[] = ['self', 'spouse']
 
 const RATING_COLOR = (score: number) => {
   if (score >= 75) return 'text-green-600'
@@ -94,6 +97,8 @@ export default function PropertyDetailPage() {
       </>
     )
   }
+
+  const hasEvaluations = property.evaluationAxes.length > 0
 
   return (
     <>
@@ -201,34 +206,60 @@ export default function PropertyDetailPage() {
                 className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5')}
               >
                 <ClipboardList size={14} />
-                {property.evaluationAxes.length === 0 ? '評価を入力する' : '評価を編集する'}
+                {hasEvaluations ? '評価を編集する' : '評価を入力する'}
               </Link>
             </div>
 
-            {property.evaluationAxes.length > 0 ? (
-              <div className="space-y-3">
-                <ScoreDisplay axes={property.evaluationAxes} />
+            {hasEvaluations ? (
+              <div className="space-y-4">
+                {/* 評価者別スコアサマリー */}
+                <div className="flex gap-3 flex-wrap">
+                  {EVALUATORS.map((evaluatorId) => {
+                    const score = calcScoreForEvaluator(property.evaluationAxes, evaluatorId)
+                    return (
+                      <div key={evaluatorId} className="rounded-lg border px-4 py-2 text-center min-w-20">
+                        <p className="text-xs text-muted-foreground">{EVALUATOR_LABEL[evaluatorId]}</p>
+                        <p className="text-2xl font-bold tabular-nums">
+                          {score !== null ? score : '—'}
+                          <span className="text-xs font-normal text-muted-foreground"> / 100</span>
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* 評価軸リスト */}
                 <div className="space-y-2">
                   {property.evaluationAxes.map((axis) => (
-                    <div key={axis.id} className="rounded-lg border p-3 space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium">{axis.name}</span>
-                        {axis.rating ? (
-                          <span
-                            className={cn(
-                              'text-xs font-medium',
-                              RATING_COLOR(RATING_SCORE[axis.rating]),
-                            )}
-                          >
-                            {EVALUATION_RATING_LABEL[axis.rating]}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">未評価</span>
-                        )}
+                    <div key={axis.id} className="rounded-lg border p-3 space-y-2">
+                      <span className="text-sm font-medium">{axis.name}</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        {EVALUATORS.map((evaluatorId) => {
+                          const flat = flattenForEvaluator([axis], evaluatorId)[0]
+                          return (
+                            <div key={evaluatorId} className="space-y-0.5">
+                              <p className="text-xs text-muted-foreground">{EVALUATOR_LABEL[evaluatorId]}</p>
+                              {flat.rating ? (
+                                <>
+                                  <span
+                                    className={cn(
+                                      'text-xs font-medium',
+                                      RATING_COLOR(RATING_SCORE[flat.rating]),
+                                    )}
+                                  >
+                                    {EVALUATION_RATING_LABEL[flat.rating]}
+                                  </span>
+                                  {flat.comment && (
+                                    <p className="text-xs text-muted-foreground">{flat.comment}</p>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">未評価</span>
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
-                      {axis.comment && (
-                        <p className="text-xs text-muted-foreground">{axis.comment}</p>
-                      )}
                     </div>
                   ))}
                 </div>

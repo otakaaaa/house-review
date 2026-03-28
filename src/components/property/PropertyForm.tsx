@@ -1,17 +1,20 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import {
+  MapPin,
+  Banknote,
+  Calendar,
+  Maximize2,
+  Building2,
+  FileText,
+  Home,
+  Trees,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   PROPERTY_TYPE_LABEL,
   PROPERTY_STATUS_LABEL,
@@ -19,6 +22,7 @@ import {
   type PropertyStatus,
   type Property,
 } from '@/types'
+import { cn } from '@/lib/utils'
 
 const rawSchema = z.object({
   name: z.string().min(1, '物件名は必須です').max(50, '50文字以内で入力してください'),
@@ -61,6 +65,39 @@ interface PropertyFormProps {
   isSubmitting?: boolean
 }
 
+const TYPE_CONFIG: { value: PropertyType; label: string; icon: React.ReactNode }[] = [
+  { value: 'land', label: '土地', icon: <Trees size={15} /> },
+  { value: 'built', label: '建売', icon: <Home size={15} /> },
+]
+
+const STATUS_CONFIG: { value: PropertyStatus; label: string; color: string; active: string }[] = [
+  { value: 'considering', label: '検討中', color: 'border-blue-300 text-blue-700', active: 'bg-blue-500 border-blue-500 text-white' },
+  { value: 'visited',     label: '訪問済み', color: 'border-green-300 text-green-700', active: 'bg-green-500 border-green-500 text-white' },
+  { value: 'rejected',    label: '見送り',  color: 'border-gray-300 text-gray-600',  active: 'bg-gray-500 border-gray-500 text-white' },
+  { value: 'contracted',  label: '契約済み', color: 'border-purple-300 text-purple-700', active: 'bg-purple-500 border-purple-500 text-white' },
+]
+
+function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="flex items-center gap-2 border-b bg-muted/40 px-4 py-3">
+        <span className="text-muted-foreground">{icon}</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</span>
+      </div>
+      <div className="p-4 space-y-5">{children}</div>
+    </div>
+  )
+}
+
+function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium text-muted-foreground">{label}</Label>
+      {children}
+    </div>
+  )
+}
+
 export default function PropertyForm({
   defaultValues,
   onSubmit,
@@ -96,106 +133,142 @@ export default function PropertyForm({
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">物件名 *</Label>
-        <Input id="name" {...register('name')} placeholder="例: ○○丁目の土地" />
-        {errors.name && (
-          <p className="text-xs text-destructive">{errors.name.message}</p>
-        )}
-      </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label>種別 *</Label>
-          <Select
-            value={propertyType}
-            onValueChange={(v) => setValue('type', v as PropertyType)}
-          >
-            <SelectTrigger>
-              <SelectValue>{PROPERTY_TYPE_LABEL[propertyType]}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(PROPERTY_TYPE_LABEL) as PropertyType[]).map((t) => (
-                <SelectItem key={t} value={t}>
-                  {PROPERTY_TYPE_LABEL[t]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>ステータス</Label>
-          <Select
-            value={propertyStatus}
-            onValueChange={(v) => setValue('status', v as PropertyStatus)}
-          >
-            <SelectTrigger>
-              <SelectValue>{PROPERTY_STATUS_LABEL[propertyStatus]}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(PROPERTY_STATUS_LABEL) as PropertyStatus[]).map((s) => (
-                <SelectItem key={s} value={s}>
-                  {PROPERTY_STATUS_LABEL[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="address">住所</Label>
-        <Input id="address" {...register('address')} placeholder="例: 東京都渋谷区..." />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="price">価格（万円）</Label>
-          <Input id="price" type="number" {...register('price')} placeholder="3500" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="visitDate">訪問日</Label>
-          <Input id="visitDate" type="date" {...register('visitDate')} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="landArea">土地面積（m²）</Label>
+      {/* 基本情報 */}
+      <SectionCard title="基本情報" icon={<FileText size={14} />}>
+        <FieldRow label="物件名 *">
           <Input
-            id="landArea"
-            type="number"
-            step="0.01"
-            {...register('landArea')}
-            placeholder="100"
+            {...register('name')}
+            placeholder="例: ○○丁目の土地"
+            className={cn('h-12 px-3 text-base', errors.name && 'border-destructive')}
           />
-        </div>
-        {propertyType === 'built' && (
-          <div className="space-y-2">
-            <Label htmlFor="buildingArea">建物面積（m²）</Label>
+          {errors.name && (
+            <p className="text-xs text-destructive mt-1">{errors.name.message}</p>
+          )}
+        </FieldRow>
+
+        <FieldRow label="種別 *">
+          <div className="flex gap-2">
+            {TYPE_CONFIG.map(({ value, label, icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setValue('type', value)}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-2 rounded-lg border py-3 text-base font-medium transition-all',
+                  propertyType === value
+                    ? 'bg-primary border-primary text-primary-foreground shadow-sm'
+                    : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground',
+                )}
+              >
+                {icon}
+                {label}
+              </button>
+            ))}
+          </div>
+        </FieldRow>
+
+        <FieldRow label="ステータス">
+          <div className="grid grid-cols-2 gap-2">
+            {STATUS_CONFIG.map(({ value, label, color, active }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setValue('status', value)}
+                className={cn(
+                  'rounded-lg border py-3 text-sm font-medium transition-all',
+                  propertyStatus === value ? active : cn('bg-background', color, 'hover:opacity-80'),
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </FieldRow>
+      </SectionCard>
+
+      {/* 場所と価格 */}
+      <SectionCard title="場所と価格" icon={<MapPin size={14} />}>
+        <FieldRow label="住所">
+          <div className="relative">
+            <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
-              id="buildingArea"
-              type="number"
-              step="0.01"
-              {...register('buildingArea')}
-              placeholder="80"
+              {...register('address')}
+              placeholder="例: 東京都渋谷区..."
+              className="h-12 pl-10 text-base"
             />
           </div>
-        )}
-      </div>
+        </FieldRow>
 
-      <div className="space-y-2">
-        <Label htmlFor="memo">メモ</Label>
+        <div className="grid grid-cols-2 gap-3">
+          <FieldRow label="価格（万円）">
+            <div className="relative">
+              <Banknote size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <Input
+                type="number"
+                {...register('price')}
+                placeholder="3500"
+                className="h-12 pl-10 text-base"
+              />
+            </div>
+          </FieldRow>
+          <FieldRow label="訪問日">
+            <div className="relative">
+              <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <Input
+                type="date"
+                {...register('visitDate')}
+                className="h-12 pl-10 text-base"
+              />
+            </div>
+          </FieldRow>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <FieldRow label="土地面積（m²）">
+            <div className="relative">
+              <Maximize2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <Input
+                type="number"
+                step="0.01"
+                {...register('landArea')}
+                placeholder="100"
+                className="h-12 pl-10 text-base"
+              />
+            </div>
+          </FieldRow>
+          {propertyType === 'built' && (
+            <FieldRow label="建物面積（m²）">
+              <div className="relative">
+                <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...register('buildingArea')}
+                  placeholder="80"
+                  className="h-12 pl-10 text-base"
+                />
+              </div>
+            </FieldRow>
+          )}
+        </div>
+      </SectionCard>
+
+      {/* メモ */}
+      <SectionCard title="メモ" icon={<FileText size={14} />}>
         <Textarea
-          id="memo"
           {...register('memo')}
-          placeholder="気になった点など自由に記録..."
-          rows={3}
+          placeholder="気になった点、周辺環境の印象など自由に記録..."
+          rows={4}
+          className="resize-none border-0 p-0 shadow-none focus-visible:ring-0 text-base"
         />
-      </div>
+      </SectionCard>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        className="w-full h-11 text-base font-semibold"
+        disabled={isSubmitting}
+      >
         {isSubmitting ? '保存中...' : '保存する'}
       </Button>
     </form>

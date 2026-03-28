@@ -52,8 +52,9 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     setErrorMessage(null)
     try {
       await signInWithPassword(email, password)
-    } catch {
-      setErrorMessage('メールアドレスまたはパスワードが正しくありません。')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setErrorMessage(msg || 'メールアドレスまたはパスワードが正しくありません。')
     } finally {
       setSubmitting(false)
     }
@@ -65,8 +66,9 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     try {
       await signInWithOtp(email)
       setOtpSent(true)
-    } catch {
-      setErrorMessage('送信に失敗しました。しばらくしてから再試行してください。')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setErrorMessage(msg || '送信に失敗しました。しばらくしてから再試行してください。')
     } finally {
       setSubmitting(false)
     }

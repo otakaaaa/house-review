@@ -59,7 +59,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        'rounded-xl px-5 py-3.5 text-sm font-bold transition-all whitespace-nowrap',
+        'rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap',
         active
           ? 'bg-[#05111e] text-white'
           : 'bg-[#efefef] text-[#1b1b1d] hover:bg-[#e4e4e4]',

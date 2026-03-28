@@ -14,6 +14,12 @@ class HouseReviewDB extends Dexie {
       properties: 'id, type, status, visitDate, totalScore, createdAt',
       axisTemplates: 'type',
     })
+    this.version(3).stores({
+      properties: 'id, type, status, visitDate, totalScore, createdAt',
+      axisTemplates: 'type',
+    }).upgrade((tx) => {
+      return tx.table('properties').toCollection().modify({ _synced: true })
+    })
   }
 }
 

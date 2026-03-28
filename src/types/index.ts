@@ -47,6 +47,7 @@ export interface Property {
   totalScore: number | null
   createdAt: string
   updatedAt: string
+  _synced?: boolean
 }
 
 export const PROPERTY_TYPE_LABEL: Record<PropertyType, string> = {

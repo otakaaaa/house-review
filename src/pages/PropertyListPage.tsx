@@ -22,6 +22,17 @@ import {
 } from '@/types'
 import { cn } from '@/lib/utils'
 
+const SORT_LABEL: Record<string, string> = {
+  createdAt_desc: '登録順（新）',
+  createdAt_asc: '登録順（古）',
+  totalScore_desc: 'スコア高順',
+  totalScore_asc: 'スコア低順',
+  visitDate_desc: '訪問日（新）',
+  visitDate_asc: '訪問日（古）',
+  price_asc: '価格（安）',
+  price_desc: '価格（高）',
+}
+
 export default function PropertyListPage() {
   const { properties } = useProperties()
   const {
@@ -56,7 +67,9 @@ export default function PropertyListPage() {
               onValueChange={(v) => setFilterType(v as PropertyType | 'all')}
             >
               <SelectTrigger className="h-8 w-24 text-xs">
-                <SelectValue />
+                <SelectValue>
+                  {filterType === 'all' ? 'すべて' : PROPERTY_TYPE_LABEL[filterType]}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">すべて</SelectItem>
@@ -73,7 +86,9 @@ export default function PropertyListPage() {
               onValueChange={(v) => setFilterStatus(v as PropertyStatus | 'all')}
             >
               <SelectTrigger className="h-8 w-28 text-xs">
-                <SelectValue />
+                <SelectValue>
+                  {filterStatus === 'all' ? '全ステータス' : PROPERTY_STATUS_LABEL[filterStatus]}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全ステータス</SelectItem>
@@ -96,7 +111,9 @@ export default function PropertyListPage() {
               }}
             >
               <SelectTrigger className="h-8 w-28 text-xs">
-                <SelectValue />
+                <SelectValue>
+                  {SORT_LABEL[`${sortKey}_${sortOrder}`]}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="createdAt_desc">登録順（新）</SelectItem>

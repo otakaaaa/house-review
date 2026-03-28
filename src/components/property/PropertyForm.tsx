@@ -88,6 +88,7 @@ export default function PropertyForm({
   })
 
   const propertyType = watch('type')
+  const propertyStatus = watch('status')
 
   const handleFormSubmit = (raw: RawFormValues) => {
     onSubmit(toFormValues(raw))
@@ -107,11 +108,11 @@ export default function PropertyForm({
         <div className="space-y-2">
           <Label>種別 *</Label>
           <Select
-            defaultValue={defaultValues?.type ?? 'land'}
+            value={propertyType}
             onValueChange={(v) => setValue('type', v as PropertyType)}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue>{PROPERTY_TYPE_LABEL[propertyType]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {(Object.keys(PROPERTY_TYPE_LABEL) as PropertyType[]).map((t) => (
@@ -126,11 +127,11 @@ export default function PropertyForm({
         <div className="space-y-2">
           <Label>ステータス</Label>
           <Select
-            defaultValue={defaultValues?.status ?? 'considering'}
+            value={propertyStatus}
             onValueChange={(v) => setValue('status', v as PropertyStatus)}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue>{PROPERTY_STATUS_LABEL[propertyStatus]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {(Object.keys(PROPERTY_STATUS_LABEL) as PropertyStatus[]).map((s) => (

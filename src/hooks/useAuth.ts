@@ -33,7 +33,7 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [setUser, setLoading])
 
-  const signIn = async (email: string): Promise<void> => {
+  const signInWithOtp = async (email: string): Promise<void> => {
     if (!supabase) throw new Error('Supabase not configured')
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -42,10 +42,16 @@ export function useAuth() {
     if (error) throw error
   }
 
+  const signInWithPassword = async (email: string, password: string): Promise<void> => {
+    if (!supabase) throw new Error('Supabase not configured')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
+  }
+
   const signOut = async (): Promise<void> => {
     if (!supabase) return
     await supabase.auth.signOut()
   }
 
-  return { signIn, signOut }
+  return { signInWithOtp, signInWithPassword, signOut }
 }

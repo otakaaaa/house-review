@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, GitCompare, LogIn } from 'lucide-react'
+import { Home, GitCompare, LogIn, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 import { useUIStore } from '@/store/uiStore'
 import { useAuthStore } from '@/store/authStore'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,12 +12,26 @@ export default function Header() {
   const location = useLocation()
   const { compareIds } = useUIStore()
   const { user } = useAuthStore()
-  const { signOut } = useAuth()
+  const { signOut, syncData } = useAuth()
   const [loginOpen, setLoginOpen] = useState(false)
+  const [syncing, setSyncing] = useState(false)
 
   const handleUserClick = () => {
     if (window.confirm('ログアウトしますか？')) {
       signOut()
+    }
+  }
+
+  const handleSync = async () => {
+    setSyncing(true)
+    try {
+      await syncData()
+      toast.success('同期しました')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.error(`同期に失敗しました: ${msg}`)
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -60,14 +75,25 @@ export default function Header() {
           </Link>
 
           {user ? (
-            <button
-              type="button"
-              onClick={handleUserClick}
-              title={`${user.email}（クリックでログアウト）`}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground hover:opacity-80 transition-opacity"
-            >
-              {userInitial}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleSync}
+                disabled={syncing}
+                title="クラウドと同期"
+                className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
+              </button>
+              <button
+                type="button"
+                onClick={handleUserClick}
+                title={`${user.email}（クリックでログアウト）`}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground hover:opacity-80 transition-opacity"
+              >
+                {userInitial}
+              </button>
+            </>
           ) : (
             <button
               type="button"

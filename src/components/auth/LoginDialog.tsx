@@ -54,7 +54,7 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       await signInWithPassword(email, password)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      setErrorMessage(msg || 'メールアドレスまたはパスワードが正しくありません。')
+      setErrorMessage('メールアドレスまたはパスワードが正しくありません。')
     } finally {
       setSubmitting(false)
     }

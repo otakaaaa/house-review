@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { toast } from 'sonner'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { pullAll } from '@/lib/sync'
 import { useAuthStore } from '@/store/authStore'
@@ -16,7 +17,10 @@ export function useAuth() {
       setUser(session?.user ?? null)
       setLoading(false)
       if (session?.user) {
-        pullAll(session.user.id).catch(() => {})
+        pullAll(session.user.id).catch((err) => {
+          const msg = err instanceof Error ? err.message : String(err)
+          toast.error(`データの同期に失敗しました: ${msg}`)
+        })
       }
     })
 
@@ -26,7 +30,10 @@ export function useAuth() {
       setUser(session?.user ?? null)
       setLoading(false)
       if (event === 'SIGNED_IN' && session?.user) {
-        pullAll(session.user.id).catch(() => {})
+        pullAll(session.user.id).catch((err) => {
+          const msg = err instanceof Error ? err.message : String(err)
+          toast.error(`データの同期に失敗しました: ${msg}`)
+        })
       }
     })
 
@@ -53,5 +60,11 @@ export function useAuth() {
     await supabase.auth.signOut()
   }
 
-  return { signInWithOtp, signInWithPassword, signOut }
+  const syncData = async (): Promise<void> => {
+    const { user } = useAuthStore.getState()
+    if (!user) return
+    await pullAll(user.id)
+  }
+
+  return { signInWithOtp, signInWithPassword, signOut, syncData }
 }

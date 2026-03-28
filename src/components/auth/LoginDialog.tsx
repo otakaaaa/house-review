@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,8 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     setErrorMessage(null)
     try {
       await signInWithPassword(email, password)
+      onOpenChange(false)
+      toast.success('ログインしました')
     } catch (err) {
       setErrorMessage('メールアドレスまたはパスワードが正しくありません。')
     } finally {

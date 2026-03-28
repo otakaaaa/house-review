@@ -1,12 +1,11 @@
-import { Badge } from '@/components/ui/badge'
 import { PROPERTY_STATUS_LABEL, type PropertyStatus } from '@/types'
 import { cn } from '@/lib/utils'
 
-const STATUS_VARIANT: Record<PropertyStatus, string> = {
-  considering: 'bg-blue-100 text-blue-800',
-  visited: 'bg-green-100 text-green-800',
-  rejected: 'bg-gray-100 text-gray-600',
-  contracted: 'bg-purple-100 text-purple-800',
+const STATUS_STYLE: Record<PropertyStatus, string> = {
+  considering: 'bg-[#05111e]/8 text-[#05111e]',
+  visited:     'bg-emerald-50 text-emerald-700',
+  rejected:    'bg-gray-100 text-gray-500',
+  contracted:  'bg-[#775a19]/10 text-[#775a19]',
 }
 
 interface StatusBadgeProps {
@@ -15,8 +14,13 @@ interface StatusBadgeProps {
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
   return (
-    <Badge className={cn('border-0', STATUS_VARIANT[status])}>
+    <span
+      className={cn(
+        'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold',
+        STATUS_STYLE[status],
+      )}
+    >
       {PROPERTY_STATUS_LABEL[status]}
-    </Badge>
+    </span>
   )
 }

@@ -1,6 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { Plus, GitCompare, ArrowUpDown } from 'lucide-react'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Link } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -19,6 +18,7 @@ import {
   type PropertyStatus,
 } from '@/types'
 import { cn } from '@/lib/utils'
+import { buttonVariants } from '@/components/ui/button'
 
 const SORT_LABEL: Record<string, string> = {
   createdAt_desc: '登録順（新）',
@@ -45,6 +45,45 @@ const STATUS_FILTERS: { value: PropertyStatus | 'all'; label: string }[] = [
   { value: 'contracted',  label: '契約済み' },
 ]
 
+function FilterChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'rounded-xl px-5 py-3.5 text-sm font-bold transition-all whitespace-nowrap',
+        active
+          ? 'bg-[#05111e] text-white'
+          : 'bg-[#efefef] text-[#1b1b1d] hover:bg-[#e4e4e4]',
+      )}
+    >
+      {label}
+    </button>
+  )
+}
+
+function FilterSectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <div className="w-1 h-4 rounded-full bg-[#775a19]" />
+      <span
+        className="text-sm font-bold text-[#1b1b1d]"
+        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+      >
+        {children}
+      </span>
+    </div>
+  )
+}
+
 export default function PropertyListPage() {
   const { properties } = useProperties()
   const {
@@ -52,124 +91,98 @@ export default function PropertyListPage() {
     filterStatus,
     sortKey,
     sortOrder,
-    compareIds,
     setFilterType,
     setFilterStatus,
     setSort,
   } = useUIStore()
-  const navigate = useNavigate()
 
   return (
     <>
       <Header />
       <Layout>
-        <div className="py-4 space-y-4">
+        <div className="py-6 space-y-6">
 
           {/* ページヘッダー */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">物件一覧</h1>
-              {properties !== undefined && properties.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-0.5">{properties.length}件</p>
-              )}
-            </div>
-            <Link
-              to="/properties/new"
-              className={cn(buttonVariants({ size: 'sm' }), 'gap-1.5 rounded-full px-4')}
+          <div>
+            <h1
+              className="text-3xl font-bold text-[#1b1b1d]"
+              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
             >
-              <Plus size={15} />
-              新規登録
-            </Link>
+              物件一覧
+            </h1>
+            <p className="text-xs text-gray-400 mt-1">
+              {properties !== undefined && properties.length > 0
+                ? `${properties.length}件の物件を管理中`
+                : 'あなたの物件ポートフォリオ'}
+            </p>
           </div>
 
           {/* フィルター */}
-          <div className="rounded-xl border bg-card p-3 space-y-3">
+          <div className="space-y-5">
             {/* 種別 */}
-            <div className="flex items-center gap-2">
-              <span className="w-12 shrink-0 text-[11px] font-medium text-muted-foreground">種別</span>
-              <div className="flex gap-1.5">
+            <div>
+              <FilterSectionLabel>種別</FilterSectionLabel>
+              <div className="flex gap-2 flex-wrap">
                 {TYPE_FILTERS.map(({ value, label }) => (
-                  <button
+                  <FilterChip
                     key={value}
-                    type="button"
+                    label={label}
+                    active={filterType === value}
                     onClick={() => setFilterType(value)}
-                    className={cn(
-                      'rounded-full border px-3 py-1 text-xs font-medium transition-all',
-                      filterType === value
-                        ? 'bg-foreground text-background border-foreground'
-                        : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground',
-                    )}
-                  >
-                    {label}
-                  </button>
+                  />
                 ))}
               </div>
             </div>
 
-            <div className="border-t" />
-
-            {/* ステータス */}
-            <div className="flex items-start gap-2">
-              <span className="w-12 shrink-0 text-[11px] font-medium text-muted-foreground pt-1">状態</span>
-              <div className="flex flex-wrap gap-1.5">
+            {/* 状態 */}
+            <div>
+              <FilterSectionLabel>状態</FilterSectionLabel>
+              <div className="flex gap-2 flex-wrap">
                 {STATUS_FILTERS.map(({ value, label }) => (
-                  <button
+                  <FilterChip
                     key={value}
-                    type="button"
+                    label={label}
+                    active={filterStatus === value}
                     onClick={() => setFilterStatus(value)}
-                    className={cn(
-                      'rounded-full border px-3 py-1 text-xs font-medium transition-all',
-                      filterStatus === value
-                        ? 'bg-foreground text-background border-foreground'
-                        : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground',
-                    )}
-                  >
-                    {label}
-                  </button>
+                  />
                 ))}
               </div>
             </div>
-
-            <div className="border-t" />
 
             {/* 並び順 */}
-            <div className="flex items-center gap-2">
-              <span className="w-12 shrink-0 text-[11px] font-medium text-muted-foreground">並び順</span>
-              <Select
-                value={`${sortKey}_${sortOrder}`}
-                onValueChange={(v) => {
-                  if (!v) return
-                  const idx = v.lastIndexOf('_')
-                  const key = v.slice(0, idx) as typeof sortKey
-                  const order = v.slice(idx + 1) as typeof sortOrder
-                  setSort(key, order)
-                }}
-              >
-                <SelectTrigger className="h-7 w-auto gap-1 border-border px-2.5 text-xs">
-                  <ArrowUpDown size={11} className="text-muted-foreground" />
-                  <SelectValue>
-                    {SORT_LABEL[`${sortKey}_${sortOrder}`]}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="createdAt_desc">登録順（新）</SelectItem>
-                  <SelectItem value="createdAt_asc">登録順（古）</SelectItem>
-                  <SelectItem value="totalScore_desc">スコア高順</SelectItem>
-                  <SelectItem value="totalScore_asc">スコア低順</SelectItem>
-                  <SelectItem value="visitDate_desc">訪問日（新）</SelectItem>
-                  <SelectItem value="visitDate_asc">訪問日（古）</SelectItem>
-                  <SelectItem value="price_asc">価格（安）</SelectItem>
-                  <SelectItem value="price_desc">価格（高）</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={`${sortKey}_${sortOrder}`}
+              onValueChange={(v) => {
+                if (!v) return
+                const idx = v.lastIndexOf('_')
+                const key = v.slice(0, idx) as typeof sortKey
+                const order = v.slice(idx + 1) as typeof sortOrder
+                setSort(key, order)
+              }}
+            >
+              <SelectTrigger className="h-auto w-full rounded-2xl border border-border bg-white px-4 py-2.5 text-sm font-medium shadow-sm">
+                <SelectValue>
+                  {SORT_LABEL[`${sortKey}_${sortOrder}`]}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt_desc">登録順（新）</SelectItem>
+                <SelectItem value="createdAt_asc">登録順（古）</SelectItem>
+                <SelectItem value="totalScore_desc">スコア高順</SelectItem>
+                <SelectItem value="totalScore_asc">スコア低順</SelectItem>
+                <SelectItem value="visitDate_desc">訪問日（新）</SelectItem>
+                <SelectItem value="visitDate_asc">訪問日（古）</SelectItem>
+                <SelectItem value="price_asc">価格（安）</SelectItem>
+                <SelectItem value="price_desc">価格（高）</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* リスト */}
           {properties === undefined ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-28 w-full rounded-xl" />
+                <Skeleton key={i} className="h-64 w-full rounded-2xl" />
               ))}
             </div>
           ) : properties.length === 0 ? (
@@ -178,19 +191,27 @@ export default function PropertyListPage() {
                 🏠
               </div>
               <div className="space-y-1">
-                <p className="font-medium">物件がまだありません</p>
+                <p
+                  className="font-semibold"
+                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                >
+                  物件がまだありません
+                </p>
                 <p className="text-sm text-muted-foreground">最初の物件を登録してみましょう</p>
               </div>
               <Link
                 to="/properties/new"
-                className={cn(buttonVariants({ size: 'sm' }), 'rounded-full px-5')}
+                className={cn(
+                  buttonVariants({ size: 'sm' }),
+                  'rounded-full px-5 bg-[#05111e] hover:bg-[#0a1f33] text-white border-0',
+                )}
               >
                 <Plus size={15} />
                 登録する
               </Link>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {properties.map((p) => (
                 <PropertyCard key={p.id} property={p} />
               ))}
@@ -198,18 +219,6 @@ export default function PropertyListPage() {
           )}
         </div>
       </Layout>
-
-      {compareIds.length >= 2 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-          <Button
-            onClick={() => navigate('/compare')}
-            className="shadow-xl rounded-full px-6 h-11 gap-2 text-sm font-semibold"
-          >
-            <GitCompare size={16} />
-            {compareIds.length}件を比較する
-          </Button>
-        </div>
-      )}
     </>
   )
 }

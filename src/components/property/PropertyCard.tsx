@@ -2,40 +2,75 @@ import { Link } from 'react-router-dom'
 import { MapPin, Calendar, Check, Trees, Home } from 'lucide-react'
 import StatusBadge from './StatusBadge'
 import { useUIStore } from '@/store/uiStore'
-import { PROPERTY_TYPE_LABEL, type Property, type PropertyStatus } from '@/types'
+import { PROPERTY_TYPE_LABEL, type Property } from '@/types'
 import { cn } from '@/lib/utils'
 
-const STATUS_ACCENT: Record<PropertyStatus, string> = {
-  considering: 'border-l-blue-400',
-  visited:     'border-l-green-400',
-  rejected:    'border-l-gray-300',
-  contracted:  'border-l-purple-400',
-}
-
-function ScoreBadge({ score }: { score: number | null }) {
+function ScoreOverlay({ score }: { score: number | null }) {
   if (score === null) return null
 
-  const { bg, text } =
-    score >= 75 ? { bg: 'bg-green-100',  text: 'text-green-700' } :
-    score >= 50 ? { bg: 'bg-yellow-100', text: 'text-yellow-700' } :
-    score >= 25 ? { bg: 'bg-orange-100', text: 'text-orange-700' } :
-                  { bg: 'bg-red-100',    text: 'text-red-700' }
+  const style =
+    score >= 75 ? 'bg-emerald-500 text-white' :
+    score >= 50 ? 'bg-amber-500 text-white'   :
+    score >= 25 ? 'bg-orange-500 text-white'  :
+                  'bg-red-500 text-white'
 
   return (
-    <div className={cn('flex flex-col items-center justify-center rounded-xl px-2.5 py-1.5 min-w-12', bg)}>
-      <span className={cn('text-xl font-bold tabular-nums leading-none', text)}>{score}</span>
-      <span className={cn('text-[10px] leading-none mt-0.5', text)}>/ 100</span>
+    <div
+      className={cn(
+        'absolute top-3 right-3 flex flex-col items-center justify-center rounded-full w-12 h-12 shadow-lg',
+        style,
+      )}
+    >
+      <span className="text-base font-bold tabular-nums leading-none">{score}</span>
+      <span className="text-[9px] leading-none opacity-80">/100</span>
     </div>
   )
 }
 
-function PhotoPlaceholder({ type }: { type: Property['type'] }) {
+function PhotoArea({ property }: { property: Property }) {
+  const isRejected = property.status === 'rejected'
+
   return (
-    <div className="flex h-full w-full items-center justify-center bg-muted">
-      {type === 'built'
-        ? <Home size={24} className="text-muted-foreground/40" />
-        : <Trees size={24} className="text-muted-foreground/40" />
-      }
+    <div className="relative w-full h-52 overflow-hidden">
+      {property.photos.length > 0 ? (
+        <img
+          src={property.photos[0].dataUrl}
+          alt={property.name}
+          className={cn(
+            'h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]',
+            isRejected && 'grayscale opacity-50',
+          )}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-[#efefef]">
+          {property.type === 'built'
+            ? <Home size={36} className="text-gray-300" />
+            : <Trees size={36} className="text-gray-300" />
+          }
+        </div>
+      )}
+
+      {/* 上部グラデーション（種別バッジを見やすく） */}
+      <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/30 to-transparent" />
+      {/* 下部グラデーション（コンテンツへの繋がり） */}
+      <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-black/10 to-transparent" />
+
+      {/* 種別バッジ（画像左上） */}
+      <span className="absolute top-3 left-3 rounded-full bg-black/40 px-2.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+        {PROPERTY_TYPE_LABEL[property.type]}
+      </span>
+
+      {/* スコアバッジ（画像右上） */}
+      <ScoreOverlay score={property.totalScore} />
+
+      {/* 見送りオーバーレイ */}
+      {isRejected && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="rounded-full bg-gray-900/60 px-4 py-1 text-xs font-bold tracking-widest text-white uppercase backdrop-blur-sm">
+            ARCHIVED
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -51,56 +86,49 @@ export default function PropertyCard({ property }: PropertyCardProps) {
   return (
     <div
       className={cn(
-        'relative flex overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-md border-l-4',
-        STATUS_ACCENT[property.status],
-        isSelected && 'ring-2 ring-primary ring-offset-1',
+        'group relative overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md',
+        isSelected ? 'ring-2 ring-[#05111e] ring-offset-2' : 'ring-1 ring-black/6',
       )}
     >
-      {/* サムネイル */}
-      <div className="w-28 shrink-0 self-stretch">
-        {property.photos.length > 0 ? (
-          <img
-            src={property.photos[0].dataUrl}
-            alt={property.name}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <PhotoPlaceholder type={property.type} />
+      {/* 画像エリア（上部・フルwidth） */}
+      <Link to={`/properties/${property.id}`} className="block">
+        <PhotoArea property={property} />
+      </Link>
+
+      {/* コンテンツエリア（下部） */}
+      <Link to={`/properties/${property.id}`} className="block px-4 pt-3 pb-4 space-y-2">
+        {/* ステータス */}
+        <StatusBadge status={property.status} />
+
+        {/* 物件名 */}
+        <p
+          className="font-bold text-[15px] leading-snug text-[#1b1b1d]"
+          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        >
+          {property.name}
+        </p>
+
+        {/* 住所 */}
+        {property.address && (
+          <p className="flex items-center gap-1 text-xs text-gray-500">
+            <MapPin size={11} className="shrink-0" />
+            <span className="truncate">{property.address}</span>
+          </p>
         )}
-      </div>
 
-      {/* コンテンツ */}
-      <Link
-        to={`/properties/${property.id}`}
-        className="flex flex-1 min-w-0 flex-col justify-between p-3 gap-2"
-      >
-        {/* 上段: バッジ・物件名 */}
-        <div className="space-y-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-medium text-muted-foreground bg-muted rounded-md px-1.5 py-0.5">
-              {PROPERTY_TYPE_LABEL[property.type]}
-            </span>
-            <StatusBadge status={property.status} />
-          </div>
-          <p className="font-bold text-base leading-snug truncate">{property.name}</p>
-          {property.address && (
-            <p className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-              <MapPin size={11} className="shrink-0" />
-              {property.address}
-            </p>
-          )}
-        </div>
-
-        {/* 下段: 価格・訪問日 */}
-        <div className="flex items-center gap-3 flex-wrap">
+        {/* 価格・訪問日 */}
+        <div className="flex items-center gap-4 pt-1">
           {property.price !== null && (
-            <span className="text-sm font-semibold">
+            <span
+              className="text-sm font-bold text-[#1b1b1d]"
+              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+            >
               {property.price.toLocaleString()}
-              <span className="text-xs font-normal text-muted-foreground ml-0.5">万円</span>
+              <span className="text-xs font-normal text-gray-400 ml-0.5">万円</span>
             </span>
           )}
           {property.visitDate && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1 text-xs text-gray-400">
               <Calendar size={11} />
               {property.visitDate}
             </span>
@@ -108,23 +136,20 @@ export default function PropertyCard({ property }: PropertyCardProps) {
         </div>
       </Link>
 
-      {/* 右端: スコア・比較ボタン */}
-      <div className="flex flex-col items-center justify-between p-3 shrink-0 gap-3">
-        <ScoreBadge score={property.totalScore} />
-        <button
-          type="button"
-          onClick={() => toggleCompare(property.id)}
-          className={cn(
-            'flex h-7 w-7 items-center justify-center rounded-lg border-2 transition-all',
-            isSelected
-              ? 'bg-primary border-primary text-primary-foreground'
-              : 'border-border bg-background hover:border-primary/60',
-          )}
-          aria-label={isSelected ? '比較から外す' : '比較に追加'}
-        >
-          {isSelected && <Check size={14} strokeWidth={3} />}
-        </button>
-      </div>
+      {/* 比較チェックボックス */}
+      <button
+        type="button"
+        onClick={() => toggleCompare(property.id)}
+        className={cn(
+          'absolute bottom-4 right-4 z-10 flex h-6 w-6 items-center justify-center rounded-md border-2 transition-all',
+          isSelected
+            ? 'bg-[#05111e] border-[#05111e] text-white shadow-sm'
+            : 'border-gray-300 bg-white hover:border-[#05111e]/50',
+        )}
+        aria-label={isSelected ? '比較から外す' : '比較に追加'}
+      >
+        {isSelected && <Check size={12} strokeWidth={3} className="text-white" />}
+      </button>
     </div>
   )
 }

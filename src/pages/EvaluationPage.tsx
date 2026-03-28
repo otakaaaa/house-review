@@ -7,13 +7,37 @@ import EvaluationForm from '@/components/evaluation/EvaluationForm'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProperty } from '@/hooks/useProperty'
+import { useAxisTemplates } from '@/hooks/useAxisTemplates'
 import { getPresetAxes } from '@/lib/presets'
-import type { EvaluationAxis, Property } from '@/types'
+import type { AxisTemplate, EvaluationAxis, Property } from '@/types'
+
+function mergeAxes(
+  templateAxes: AxisTemplate[],
+  propertyAxes: EvaluationAxis[],
+): EvaluationAxis[] {
+  const ratingMap = new Map(propertyAxes.map((a) => [a.id, { rating: a.rating, comment: a.comment }]))
+  return templateAxes.map((t) => {
+    const existing = ratingMap.get(t.id)
+    return {
+      id: t.id,
+      name: t.name,
+      weight: t.weight,
+      order: t.order,
+      rating: existing?.rating ?? null,
+      comment: existing?.comment ?? '',
+    }
+  })
+}
+
+function toTemplate(axes: EvaluationAxis[]): AxisTemplate[] {
+  return axes.map(({ id, name, weight, order }) => ({ id, name, weight, order }))
+}
 
 export default function EvaluationPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { getProperty, updateProperty } = useProperty()
+  const { getTemplate, saveTemplate } = useAxisTemplates()
   const [property, setProperty] = useState<Property | null>(null)
   const [axes, setAxes] = useState<EvaluationAxis[]>([])
   const [loading, setLoading] = useState(true)
@@ -21,22 +45,34 @@ export default function EvaluationPage() {
 
   useEffect(() => {
     if (!id) return
-    getProperty(id).then((p) => {
-      if (p) {
-        setProperty(p)
-        setAxes(
-          p.evaluationAxes.length > 0 ? p.evaluationAxes : getPresetAxes(p.type),
-        )
+    Promise.all([getProperty(id), null]).then(async ([p]) => {
+      if (!p) {
+        setLoading(false)
+        return
+      }
+      setProperty(p)
+
+      const template = await getTemplate(p.type)
+      if (template) {
+        setAxes(mergeAxes(template, p.evaluationAxes))
+      } else {
+        // No template yet — use preset or property's own axes as initial
+        const initial =
+          p.evaluationAxes.length > 0 ? p.evaluationAxes : getPresetAxes(p.type)
+        setAxes(initial)
       }
       setLoading(false)
     })
-  }, [id, getProperty])
+  }, [id, getProperty, getTemplate])
 
   const handleSubmit = async () => {
-    if (!id) return
+    if (!id || !property) return
     setIsSubmitting(true)
     try {
-      await updateProperty(id, { evaluationAxes: axes })
+      await Promise.all([
+        saveTemplate(property.type, toTemplate(axes)),
+        updateProperty(id, { evaluationAxes: axes }),
+      ])
       toast.success('評価を保存しました')
       navigate(`/properties/${id}`)
     } catch {

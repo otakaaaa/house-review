@@ -13,6 +13,18 @@ export interface EvaluationAxis {
   order: number
 }
 
+export interface AxisTemplate {
+  id: string
+  name: string
+  weight: number
+  order: number
+}
+
+export interface AxisTemplateRecord {
+  type: PropertyType
+  axes: AxisTemplate[]
+}
+
 export interface Photo {
   id: string
   dataUrl: string

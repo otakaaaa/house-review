@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import LoginDialog from '@/components/auth/LoginDialog'
+import LogoutDialog from '@/components/auth/LogoutDialog'
 
 const navLinkClass = (active: boolean) =>
   cn(
@@ -19,8 +20,9 @@ export default function BottomNav() {
   const navigate = useNavigate()
   const { compareIds } = useUIStore()
   const { user } = useAuthStore()
-  const { signOut, syncData } = useAuth()
+  const { syncData } = useAuth()
   const [loginOpen, setLoginOpen] = useState(false)
+  const [logoutOpen, setLogoutOpen] = useState(false)
   const [syncing, setSyncing] = useState(false)
 
   const handleSync = async () => {
@@ -33,12 +35,6 @@ export default function BottomNav() {
       toast.error(`同期に失敗しました: ${msg}`)
     } finally {
       setSyncing(false)
-    }
-  }
-
-  const handleUserClick = () => {
-    if (window.confirm('ログアウトしますか？')) {
-      signOut()
     }
   }
 
@@ -85,8 +81,8 @@ export default function BottomNav() {
               </button>
               <button
                 type="button"
-                onClick={handleUserClick}
-                title={`${user.email}（クリックでログアウト）`}
+                onClick={() => setLogoutOpen(true)}
+                title={user.email ?? ''}
                 className={navLinkClass(false)}
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#05111e] text-xs font-bold text-white">
@@ -109,6 +105,7 @@ export default function BottomNav() {
       </nav>
 
       <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
+      <LogoutDialog open={logoutOpen} onOpenChange={setLogoutOpen} />
     </>
   )
 }
